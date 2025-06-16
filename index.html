@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>EDP lectures</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <link rel="stylesheet" href="./assets/katex.css">
+    <link rel="stylesheet" href="./assets/style.css">
+    <link rel="stylesheet" href="./assets/grid.css">
+  </head>
+  <body>
+    <textarea id="source"></textarea>
+    <script src="./assets/remark.min.js"></script>
+    <script src="./assets/katex.js"></script>
+    <script src="./assets/auto-render.min.js"></script>
+
+    <script type="text/javascript">
+        function getParameterByName(name, url) {
+            if (!url) url = window.location.href;
+            name = name.replace(/[\[\]]/g, "\\$&");
+            var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
+                results = regex.exec(url);
+            if (!results) return null;
+            if (!results[2]) return '';
+            return decodeURIComponent(results[2].replace(/\+/g, " "));
+        }
+
+        var options = {sourceUrl: getParameterByName("p"),
+                       highlightStyle: "tomorrow",
+                       countIncrementalSlides: false,
+        };
+        var renderMath = function() {
+            renderMathInElement(document.body, {
+
+              delimiters: [ // mind the order of delimiters(!?)
+                {left: "$$", right: "$$", display: true},
+                {left: "$", right: "$", display: false},
+                {left: "\\[", right: "\\]", display: true},
+                {left: "\\(", right: "\\)", display: false},
+            ],
+              macros: {                     
+                '\\neq': '\\mathrel{\\char`≠}'
+              }
+
+            });
+        }
+
+        async function initializeSlideshow() {
+            try {
+                // --- 1. FETCHING & SETUP ---
+                const sourceUrl = getParameterByName("p");
+                if (!sourceUrl) {
+                    console.error("No presentation URL found in 'p' parameter.");
+                    document.title = "Error: No presentation specified";
+                    // Attempt to load from textarea as a fallback
+                    remark.create({ source: document.getElementById('source').textContent }, renderMath);
+                    return;
+                }
+
+                const response = await fetch(sourceUrl);
+                if (!response.ok) {
+                    console.error("Failed to fetch presentation:", response.statusText);
+                    document.title = `Error loading presentation`;
+                    return;
+                }
+                const markdownContent = await response.text();
+                // This variable will be transformed by the following steps.
+                let processedMarkdown = markdownContent;
+
+                // --- 2. DYNAMIC HTML TITLE ---
+                // This part uses the original, unmodified markdown to find the title.
+                const titleMatch = markdownContent.match(/^#\s+(.*)/m);
+                if (titleMatch && titleMatch[1]) {
+                    const rawTitle = titleMatch[1];
+                    const cleanTitle = rawTitle.replace(/<br\s*\/?>/gi, ' ');
+                    document.title = cleanTitle;
+                } else {
+                    document.title = "Presentation";
+                }
+
+                // --- 3. DYNAMIC OUTLINE GENERATION ---
+                // This section transforms the markdown to include dynamic outlines.
+                const slides = markdownContent.split(/\n---\n/);
+                const masterSlideRegex = /^#\s+Outline/m;
+                const masterOutlineSlide = slides.find(slide => masterSlideRegex.test(slide.trim()));
+
+                if (masterOutlineSlide) {
+                    const outlineItems = masterOutlineSlide.split('\n').map(line => line.trim())
+                        .filter(line => line.startsWith('* ') || line.startsWith('- '))
+                        .map(line => line.substring(2).trim());
+
+                    if (outlineItems.length > 0) {
+                        const createOutlineMarkdown = (activeIndex) => {
+                            let markdown = "# Outline\n\n";
+                            outlineItems.forEach((item, index) => {
+                                markdown += (index === activeIndex) ? `* **${item}**\n` : `* ${item}\n`;
+                            });
+                            return markdown;
+                        };
+
+                        const tempPlaceholder = `__OUTLINE_PLACEHOLDER__${Date.now()}__`;
+                        let template = markdownContent.replace(masterOutlineSlide, tempPlaceholder);
+                        template = template.replace(/{{OUTLINE}}/g, tempPlaceholder);
+
+                        let outlineCounter = 0;
+                        processedMarkdown = template.replace(new RegExp(tempPlaceholder, 'g'), () => {
+                            // Use this line instead if you want the first outline to include bold.
+                            //const generatedSlide = createOutlineMarkdown(outlineCounter);
+                            const generatedSlide = createOutlineMarkdown(outlineCounter-1);
+                            outlineCounter++;
+                            return generatedSlide;
+                        });
+                    }
+                }
+
+                // --- 4. HANDLE INCREMENTAL SLIDES (h=1 parameter) ---
+                // This operates on the markdown *after* outlines have been generated.
+                const shouldHideIncrements = getParameterByName('h') === '1';
+                if (shouldHideIncrements) {
+                    console.log("Hiding incremental slides.");
+                    // Regex replaces '--' at the start of a line, but not '---'
+                    processedMarkdown = processedMarkdown.replace(/^\s*--(?!-)/gm, '');
+                }
+
+                // --- 5. INITIALIZE REMARK ---
+                // Use the fully processed markdown as the source.
+                const slideshowOptions = {
+                    source: processedMarkdown,
+                    highlightStyle: "tomorrow",
+                    countIncrementalSlides: false,
+                };
+                
+                var slideshow = remark.create(slideshowOptions, renderMath);
+
+            } catch (error) {
+                console.error("An error occurred during slideshow initialization:", error);
+                document.title = "Error initializing slides";
+            }
+        }
+
+        // Run the function to start the process.
+        initializeSlideshow();
+    </script>
+  </body>
+</html>
