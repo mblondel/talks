@@ -3,11 +3,13 @@ class: middle, center, title-slide
 $$
 \gdef\muv{\bm{\mu}}
 \gdef\thetav{\bm{\theta}}
-\gdef\x{\bm{x}}
+\gdef\x{{\bm{x}}}
 \gdef\y{\bm{y}}
-\gdef\w{\bm{w}}
+\gdef\w{{\bm{w}}}
 \gdef\cC{\mathcal{C}}
+\gdef\cF{\mathcal{F}}
 \gdef\cL{\mathcal{L}}
+\gdef\cP{\mathcal{P}}
 \gdef\cW{\mathcal{W}}
 \gdef\cX{\mathcal{X}}
 \gdef\cY{\mathcal{Y}}
@@ -163,9 +165,6 @@ $$
 
 $\cC$ is a convex superset of $\cY$, for example, $\cC = \mathrm{conv}(\cY)$.
 
-$g(\x, \muv)$ is well-defined on $\cX \times \cC$ instead of
-$\cX \times \cY$.
-
 Typically, rounding the solution from $\cC$ to $\cY$ is necessary.
 
 **Example**
@@ -174,6 +173,9 @@ $\argmax\_{\y \in \\{0,1\\}^k} g(\x, \y)$
 can be relaxed into
 $\argmax\_{\muv \in [0,1]^k} g(\x, \muv)$
 
+$g(\x, \muv)$ needs to be well-defined on $\cX \times \cC$ instead of
+$\cX \times \cY$.
+
 ---
 
 ## Sampling
@@ -181,11 +183,11 @@ $\argmax\_{\muv \in [0,1]^k} g(\x, \muv)$
 How to sample
 $$\y \sim p\_g(\cdot|\x)$$
 where
-$$p(\y|\x) \propto q(\y|\x) \exp(g(\x, \y))$$
+$$p\_g(\y|\x) \propto q(\y|\x) \exp(g(\x, \y))$$
 
 <br>
 
-Designing a sampler is typically case-by-case.
+Designing a sampler is typically **case by case**.
 
 * Continuous $\cY$: Langevin
 * Binary $\cY$: Gibbs sampling
@@ -198,6 +200,8 @@ Designing a sampler is typically case-by-case.
 
 ## The challenge of MLE
 
+<br>
+
 $$
 \begin{aligned}
 \cL\_{\mathrm{MLE}}(g) 
@@ -206,17 +210,155 @@ $$
 \end{aligned}
 $$
 
-**Problem**
+<br>
 
-The log-partition function is intractable in general.
+The **log-partition function** (a.k.a. **log-sum-exp**) is intractable in general.
+
+<br>
 
 $$
 \LSE\_g(\x) \coloneqq \log \sum_{\y' \in \cY} q(\y'|\x) \exp(g(\x,\y'))
 $$
 
+
+---
+
+## Contrastive divergences
+
+Originally proposed for **RBMs** but they can be used for **EBMs** as well.
+
+Gradient of the MLE objective
+
+$$
+\nabla\_\w \cL(g\_\w)
+= \EE\_{\x} \EE\_{\y' \sim p\_{g\_\w}(\cdot|\x)}
+[\nabla\_\w g\_\w(\x, \y')] - \EE\_{(\x,\y)} \nabla\_\w g\_\w(\x, \y)
+$$
+
+<br>
+
+Sampling from $p\_{g\_\w}(\cdot|\x)$ often requires **MCMC** as we saw.
+
+<br>
+
+Truncated MCMC leads to **biased gradients**.
+
+---
+
+## Generalized perceptron losses
+
+$$(\x, \y) \mapsto 
+\max_{\muv \in \cC} g(\x, \muv) - g(\x, \y)$$
+
+where $\cC$ is a convex superset of $\cY$, for example, $\cC = \mathrm{conv}(\cY)$.
+
+**Advantage**
+
+It circumvents the need for computing the log-partition.
+
+**Disadvantage**
+
+It does not learn a probabilistic model, only the argmax.
+
+$$
+\argmax_{\muv \in \cC} g(\x, \muv)
+$$
+
+---
+
+## Min-max formulation
+
+Variational formulation of the log-sum-exp for all $\x \in \cX$
+$$
+\LSE\_g(\x)
+= \max\_{p \in \cP(\cY|\x)} \EE_{\y \sim p(\cdot|\x)} \left[g(\x, \y) - \log p(\y|\x)\right]
+$$
+
+<br>
+
+By using this formulation in the MLE objective, we obtain 
+$$
+\min\_{g \in \cF(\cX \times \cY)}
+\max\_{p \in \cP(\cY|\cX)}
+\EE\_\x \EE\_{\y' \sim p(\cdot|\x)}[g(\x, \y') - \log p(\y')] - \EE\_{(\x,\y)}[g(\x, \y)]
+$$
+
+<br>
+Gradients w.r.t. the parameters of $p$ often use the **score function estimator** (REINFORCE),
+which is known to suffer from **high variance**
+
 ---
 
 {{OUTLINE}}
+
+---
+
+## Another variational formulation of the log-sum-exp
+
+<br>
+
+$$
+\LSE\_g(\x)
+=
+\min\_{\tau \in \RR}
+\tau + \EE\_{\y' \sim q(\cdot|\x)} \left[ \exp(g(\x, \y') - \tau) - 1\right]
+$$
+
+<br>
+
+$\tau$ is the **Lagrange multiplier** associated with the constraint for $\x \in \cX$
+$$
+\sum_{\y \in \cY} p\_g(\y|\x) = 1
+$$
+
+<br>
+The optimal variable **exactly coincides** with the log-partition
+$$
+\tau^\star = \LSE\_g(\x)
+$$
+
+We are treating the log-partition as an **optimization variable** rather than as a quantity to compute.
+
+---
+
+## Proposed min-min objective
+
+By plugging the variational form in the MLE objective, we obtain
+
+<br>
+
+$$
+\min\_{g \in \cF(\cX \times \cY)}
+\min\_{\tau \in \cF(\cX)}
+\EE\_\x \left[\tau(\x) + \EE\_{\y' \sim q(\cdot|\x)} \left[ \exp(g(\x, \y') - \tau(\x)) - 1\right]\right] - \EE\_{(\x,\y)}[g(\x, \y)]
+$$
+
+<br>
+$\tau \in \cF(\cX) \iff \tau \colon \cX \to \RR$ is a continuous **scalar-valued function**
+
+<br>
+**Recovers the MLE solution**
+
+$$
+\begin{aligned}
+\LSE\_{g^\star}(\x) &= \tau^\star(\x)  \\\\
+p\_{g^\star}(\y|\x) &= q(\y|\x) \exp(g^\star(\x,\y) - \tau^\star(\x))
+\end{aligned}
+$$
+
+---
+
+**Doubly stochastic gradient estimator**
+
+* Samples $(\x, \y)$ given the data distribution
+* Samples $\y'$ given the prior distribution $q(\cdot|\x)$
+* Unbiased!
+
+---
+
+class: middle
+
+.center.width-100[![](./figures/ebm/convergence.png)]
 
 ---
 
