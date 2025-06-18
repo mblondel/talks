@@ -3,13 +3,15 @@ class: middle, center, title-slide
 $$
 \gdef\muv{\bm{\mu}}
 \gdef\thetav{\bm{\theta}}
+\gdef\v{{\bm{v}}}
+\gdef\w{{\bm{w}}}
 \gdef\x{{\bm{x}}}
 \gdef\y{\bm{y}}
-\gdef\w{{\bm{w}}}
 \gdef\cC{\mathcal{C}}
 \gdef\cF{\mathcal{F}}
 \gdef\cL{\mathcal{L}}
 \gdef\cP{\mathcal{P}}
+\gdef\cV{\mathcal{V}}
 \gdef\cW{\mathcal{W}}
 \gdef\cX{\mathcal{X}}
 \gdef\cY{\mathcal{Y}}
@@ -41,7 +43,7 @@ Michaël Sander, Vincent Roulet, Tianlin Liu, Mathieu Blondel
 
 ## Problem setup: probabilistic structured prediction
 
-.center[**Goal:** learn a conditional probability distribution $p(\y|\x)$]
+.center[**Goal:** learn a conditional probability distribution $p(\y|\x)$ over $\cY|\cX$]
 
 $\cX$: input space <br>
 $\cY$: combinatorially-large discrete output space
@@ -53,6 +55,14 @@ $\cY$: combinatorially-large discrete output space
 * Multi-label classification: $\cY$ is the power set of $[k]$, with $|\cY| = 2^k$
 * Label ranking: $\cY$ is the set of permutations, with $|\cY| = k!$
 
+.grid[
+.kol-1-2.left.width-90[
+![](./figures/ebm/hypercube.png) 
+]
+.kol-1-2.center.width-90[
+![](./figures/ebm/permutahedron.png)
+]
+]
 
 ---
 
@@ -65,7 +75,9 @@ $$
 
 <br>
 
-$g(\x, \y)$: scalar-valued function, $q(\y|\x)$ prior distribution
+$g(\x, \y)$: scalar-valued "affinity" function.
+
+$q(\y|\x)$ prior distribution, can be used to "guide" the EBM.
 
 <br><br>
 
@@ -184,6 +196,7 @@ How to sample
 $$\y \sim p\_g(\cdot|\x)$$
 where
 $$p\_g(\y|\x) \propto q(\y|\x) \exp(g(\x, \y))$$
+?
 
 <br>
 
@@ -198,7 +211,7 @@ Designing a sampler is typically **case by case**.
 
 ---
 
-## The challenge of MLE
+## The challenge of maximum likelihood estimation (MLE)
 
 <br>
 
@@ -252,13 +265,15 @@ $$(\x, \y) \mapsto
 
 where $\cC$ is a convex superset of $\cY$, for example, $\cC = \mathrm{conv}(\cY)$.
 
-**Advantage**
+**Advantages**
 
-It circumvents the need for computing the log-partition.
+They circumvent the need for computing the log-partition.
+
+Gradients are easy to compute thanks to envelope theorems.
 
 **Disadvantage**
 
-It does not learn a probabilistic model, only the argmax.
+They do not learn a probabilistic model, only the relaxed argmax.
 
 $$
 \argmax_{\muv \in \cC} g(\x, \muv)
@@ -334,7 +349,7 @@ $$
 $$
 
 <br>
-$\tau \in \cF(\cX) \iff \tau \colon \cX \to \RR$ is a continuous **scalar-valued function**
+There is one Lagrange multiplier per $\x \in \cX$ therefore $\tau$ is a function from $\cX$ to $\RR$!
 
 <br>
 **Recovers the MLE solution**
@@ -348,17 +363,119 @@ $$
 
 ---
 
+## Parameterisation and doubly stochastic gradient estimator
+
+The previous formulation was in **function space**.
+
+In practice, we optimize in **parameter space**.
+
+$$
+\min\_{\w \in \cW}
+\min\_{\v \in \cV}
+\EE\_\x \left[\tau\_\v(\x) + \EE\_{\y' \sim q(\cdot|\x)} \left[ \exp(g\_\w(\x, \y') - \tau\_v(\x)) - 1\right]\right] - \EE\_{(\x,\y)}[g\_\w(\x, \y)]
+$$
+
+Both $g$ and $\tau$ are scalar-valued neural networks.
+
+<br>
+
 **Doubly stochastic gradient estimator**
 
 * Samples $(\x, \y)$ given the data distribution
 * Samples $\y'$ given the prior distribution $q(\cdot|\x)$
 * Unbiased!
+* For very large spaces $\cY$, a good prior $q$ would be very useful!
 
 ---
 
 class: middle
 
 .center.width-100[![](./figures/ebm/convergence.png)]
+
+.center[Convergence of the proposed method compared to exact MLE <br> on a multi-label task with $2^{174}$ configurations.]
+
+---
+
+## Generalization ability of the learned log-partition
+
+In practice we parameterize $\tau\_\v(\x)$ as a neural network with parameters $\v \in \cV$.
+
+We have $\tau\_\v(\x) \approx \LSE\_g(\x)$ on training points $\x$.
+
+How about on **unseen points** $\x$?
+
+<br>
+
+.center.width-100[![](./figures/ebm/generalization_ability.png)]
+
+.center[Generalization ability of the learned log-partition <br> on $100$ unseen $\x$ points <br> in multi-label tasks.]
+
+---
+
+## Finite sum setting
+
+In practice, we often use a finite training set $(\x\_1, \y\_1), \dots, (\x\_n, \y\_n)$.
+
+$$
+\min\_{g \in \cF(\cX \times \cY)}
+\min\_{\tau \in \cF(\cX)}
+\frac{1}{n} \sum\_{i=1}^n
+\left(\tau(\x\_i) + \EE\_{\y' \sim q(\cdot|\x\_i)} \left[ \exp(g(\x\_i, \y') - \tau(\x\_i)) - 1\right] - g(\x\_i, \y\_i)\right)
+$$
+
+<br>
+
+This is equivalent to
+
+$$
+\min\_{g \in \cF(\cX \times \cY)}
+\min\_{\bm{\tau} \in \RR^n}
+\frac{1}{n} \sum\_{i=1}^n
+\left(\tau\_i + \EE\_{\y' \sim q(\cdot|\x\_i)} \left[ \exp(g(\x\_i, \y') - \tau\_i) - 1\right] - g(\x\_i, \y\_i)\right)
+$$
+
+---
+
+## Generalization to f-divergences
+
+Recall that
+$$
+p\_g(\y|\x) \coloneqq \frac{q(\y|\x)\exp(g(\x, \y))}{\sum\_{\y' \in \cY}q(\y'|\x)\exp(g(\x, \y'))}
+$$
+
+This is equivalent to
+$$
+p\_g(\cdot|\x) = \argmax_{p \in \cP(\cY)} \langle g(\x, \cdot), p \rangle - \mathrm{KL}(p, q(\cdot|\x))
+$$
+
+<br>
+
+Our approach easily generalizes to learning distributions of the form
+$$
+p\_g^f(\cdot|\x) \coloneqq \argmax_{p \in \cP(\cY)} \langle g(\x, \cdot), p \rangle - D\_f(p, q(\cdot|\x))
+$$
+where $D\_f$ is an **f-divergence**.
+
+---
+
+## Summary of key ingredients in the proposed approach
+
+- Dualize then parameterize (and not the opposite).
+
+  * This makes strong duality work.
+
+- Treat an intractable quantity (the log-partition) as an optimization variable (Lagrange multiplier)
+
+  * The Lagrange multiplier $\tau(\x)$ corresponds to the equality constraint 
+$$
+\sum_{\y \in \cY} p\_g(\y|\x) = 1.
+$$
+
+  * In practice, since we do not reach the optimal Lagrange multiplier, this amounts to relaxing the equality constraint.
+
+- Parameterize the Lagrange multiplier (dual variable) as a neural network.
+
+  * This allows us to approximate the log-partition on unseen $\x$ points.
 
 ---
 
