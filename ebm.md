@@ -3,6 +3,8 @@ class: middle, center, title-slide
 $$
 \gdef\muv{\bm{\mu}}
 \gdef\thetav{\bm{\theta}}
+\gdef\u{{\bm{u}}}
+\gdef\U{{\bm{U}}}
 \gdef\v{{\bm{v}}}
 \gdef\w{{\bm{w}}}
 \gdef\x{{\bm{x}}}
@@ -10,6 +12,7 @@ $$
 \gdef\cC{\mathcal{C}}
 \gdef\cF{\mathcal{F}}
 \gdef\cL{\mathcal{L}}
+\gdef\cB{\mathcal{B}}
 \gdef\cP{\mathcal{P}}
 \gdef\cV{\mathcal{V}}
 \gdef\cW{\mathcal{W}}
@@ -458,7 +461,109 @@ where $D\_f$ is an **f-divergence**.
 
 ---
 
-## Summary of key ingredients in the proposed approach
+{{OUTLINE}}
+
+---
+
+## Multi-label classification: modeling
+
+**Unary model**
+$$
+\begin{aligned}
+\u &\coloneqq h(\x) \in \RR^k \\\\
+g(\x, \y) &\coloneqq \langle \u, \y \rangle \in \RR
+\end{aligned}
+$$
+Each $u\_i$ is the weight of label $i \in [k]$.
+
+
+**Pairwise model** (Ising model)
+$$
+\begin{aligned}
+\u, \U &\coloneqq h(\x) \in \RR^k \times \RR^{k \times k} \\\\
+g(\x, \y) &\coloneqq \langle \u, \y \rangle + \frac{1}{2} \langle \y, \U \y \rangle \in \RR
+\end{aligned}
+$$
+Each $U\_{i,j}$ is the weight of the **interaction** between label $i \in [k]$ and label $j \in [k]$.
+
+.center.width-30[![](./figures/ebm/hypercube.png)]
+
+---
+
+## Multi-label classification: how to predict?
+
+**Unary model**
+
+$$
+\u \mapsto \argmax\_{\y \in \\{0,1\\}^k} \langle \u, \y \rangle
+=
+\argmax\_{\y \in [0,1]^k} \langle \u, \y \rangle
+=
+[\u]\_{\ge 0}
+$$
+
+<br>
+
+
+**Pairwise model** (Ising model)
+
+$$
+(\u, \U) \mapsto \argmax\_{\y \in \\{0,1\\}^k} \langle \u, \y \rangle + \frac{1}{2} \langle \y, \U \y \rangle
+\approx
+\argmax\_{\y \in [0,1]^k} \langle \u, \y \rangle + \frac{1}{2} \langle \y, \U \y \rangle
+$$
+Can be solved by projected gradient descent or coordinate descent.
+
+---
+
+## Multi-label classification: loss comparison
+
+---
+
+## Multi-label classification: model comparison
+
+---
+
+## Label ranking
+
+**Permutahedron**
+
+$$
+\begin{aligned}
+&\thetav \coloneqq h(\x) \in \RR^k \\\\
+&\thetav \mapsto \argmax\_{\y \in \cP} \langle \thetav, \y \rangle
+\end{aligned}
+$$
+
+**Birkhoff polytope**
+
+$$
+\begin{aligned}
+&\thetav \coloneqq h(\x) \in \RR^{k \times k} \\\\
+&\thetav \mapsto \argmax\_{\y \in \cB} \langle \thetav, \y \rangle
+\end{aligned}
+$$
+
+.grid[
+.kol-1-2.left.width-90[
+![](./figures/ebm/permutahedron.png)
+]
+.kol-1-2.center.width-90[
+![](./figures/ebm/birkhoff.png)
+]
+]
+
+---
+
+## Label ranking: loss comparison
+
+---
+
+## Label ranking: model comparison
+
+---
+
+## Take aways
 
 - Dualize then parameterize (and not the opposite).
 
@@ -476,7 +581,3 @@ $$
 - Parameterize the Lagrange multiplier (dual variable) as a neural network.
 
   * This allows us to approximate the log-partition on unseen $\x$ points.
-
----
-
-{{OUTLINE}}
