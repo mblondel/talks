@@ -84,7 +84,7 @@ $q(\y|\x)$ prior distribution, can be used to "guide" the EBM.
 
 <br><br>
 
-EBMs ar also used in the unsupervised setting to learn a distribution $p\_g(\x)$.
+EBMs are also used in the unsupervised setting to learn a distribution $p\_g(\x)$.
 
 ---
 
@@ -122,31 +122,29 @@ $$
 
 ## Three inference problems
 
-* Computing the mode
+* **Mode**
 $$
-\y^\star\_g(\x) 
-\coloneqq \argmax\_{\y \in \cY} p\_g(\y|\x) 
+\x \mapsto \argmax\_{\y \in \cY} p\_g(\y|\x) 
 $$
 
 <br>
 
-* Sampling
+* **Sampling**
 $$
 \y \sim p\_g(\cdot|\x)
 $$
 
 <br>
 
-* Computing the mean
+* **Mean**
 $$
-\muv\_g(\x) 
-\coloneqq \EE\_{\y \sim p\_g(\cdot|\x)}[\y]
+\x \mapsto \EE\_{\y \sim p\_g(\cdot|\x)}[\y]
 \in \mathrm{conv}(\cY)
 $$
 
 <br>
 
-.center[Each problem requires a specific oracle for a given output set $\cY$.]
+.center[Each problem requires a specific **oracle** for a given output set $\cY$.]
 
 ---
 
@@ -159,14 +157,15 @@ and $q$ is uniform, then
 <br>
 
 $$
-\y^\star\_g(\x) 
-= \argmax\_{\y \in \cY} \langle h(\x), \y \rangle
-\subseteq \argmax\_{\y \in \mathrm{conv}(\cY)} \langle h(\x), \y \rangle
+\max\_{\y \in \cY} \langle h(\x), \y \rangle
+= 
+\max\_{\y \in \mathrm{conv}(\cY)} \langle h(\x), \y \rangle
 $$
 
 <br>
 
 This is a **linear program**. 
+
 Dedicated oracles exist for specific $\cY$.
 
 ---
@@ -175,12 +174,12 @@ Dedicated oracles exist for specific $\cY$.
 
 More generally we can solve the **relaxed problem**
 $$
-\argmax\_{\muv \in \cC} g(\x, \muv) \approx \y^\star\_g(\x)
+\x \mapsto \argmax\_{\muv \in \cC} g(\x, \muv)
 $$
 
 $\cC$ is a convex superset of $\cY$, for example, $\cC = \mathrm{conv}(\cY)$.
 
-Typically, rounding the solution from $\cC$ to $\cY$ is necessary.
+Typically, **rounding** the solution from $\cC$ to $\cY$ is necessary.
 
 **Example**
 
@@ -195,18 +194,17 @@ $\cX \times \cY$.
 
 ## Sampling
 
-How to sample
-$$\y \sim p\_g(\cdot|\x)$$
+How to sample $\y \sim p\_g(\cdot|\x)$
 where
-$$p\_g(\y|\x) \propto q(\y|\x) \exp(g(\x, \y))$$
+$p\_g(\y|\x) \propto q(\y|\x) \exp(g(\x, \y))$
 ?
 
 <br>
 
 Designing a sampler is typically **case by case**.
 
-* Continuous $\cY$: Langevin
-* Binary $\cY$: Gibbs sampling
+* Continuous $\cY$: **Langevin**
+* Binary vectors $\cY$: **Gibbs sampling**
 
 ---
 
@@ -236,6 +234,9 @@ $$
 \LSE\_g(\x) \coloneqq \log \sum_{\y' \in \cY} q(\y'|\x) \exp(g(\x,\y'))
 $$
 
+<br>
+
+Efficient **oracles** available only in specific cases.
 
 ---
 
@@ -279,14 +280,14 @@ Gradients are easy to compute thanks to envelope theorems.
 They do not learn a probabilistic model, only the relaxed argmax.
 
 $$
-\argmax_{\muv \in \cC} g(\x, \muv)
+\x \mapsto \argmax_{\muv \in \cC} g(\x, \muv)
 $$
 
 ---
 
 ## Min-max formulation
 
-Variational formulation of the log-sum-exp for all $\x \in \cX$
+**Variational formulation** of the log-sum-exp for all $\x \in \cX$
 $$
 \LSE\_g(\x)
 = \max\_{p \in \cP(\cY|\x)} \EE_{\y \sim p(\cdot|\x)} \left[g(\x, \y) - \log p(\y|\x)\right]
@@ -294,7 +295,7 @@ $$
 
 <br>
 
-By using this formulation in the MLE objective, we obtain 
+By plugging this formulation in the MLE objective, we obtain 
 $$
 \min\_{g \in \cF(\cX \times \cY)}
 \max\_{p \in \cP(\cY|\cX)}
@@ -352,7 +353,7 @@ $$
 $$
 
 <br>
-There is one Lagrange multiplier per $\x \in \cX$ therefore $\tau$ is a function from $\cX$ to $\RR$!
+One Lagrange multiplier for **each** $\x \in \cX$ .smaller[⇒] $\tau$ is a **function** from $\cX$ to $\RR$!
 
 <br>
 **Recovers the MLE solution**
@@ -378,14 +379,14 @@ $$
 \EE\_\x \left[\tau\_\v(\x) + \EE\_{\y' \sim q(\cdot|\x)} \left[ \exp(g\_\w(\x, \y') - \tau\_v(\x)) - 1\right]\right] - \EE\_{(\x,\y)}[g\_\w(\x, \y)]
 $$
 
-Both $g$ and $\tau$ are scalar-valued neural networks.
+Both $g$ and $\tau$ are scalar-valued **neural networks**.
 
 <br>
 
 **Doubly stochastic gradient estimator**
 
-* Samples $(\x, \y)$ given the data distribution
-* Samples $\y'$ given the prior distribution $q(\cdot|\x)$
+* Samples $(\x, \y)$ from the data distribution
+* Samples $\y'$ from the prior distribution $q(\cdot|\x)$
 * Unbiased!
 * For very large spaces $\cY$, a good prior $q$ would be very useful!
 
@@ -403,7 +404,7 @@ class: middle
 
 In practice we parameterize $\tau\_\v(\x)$ as a neural network with parameters $\v \in \cV$.
 
-We have $\tau\_\v(\x) \approx \LSE\_g(\x)$ on training points $\x$.
+We have $\tau\_\v(\x) \approx \LSE\_{g\_\w}(\x)$ on training points $\x$.
 
 How about on **unseen points** $\x$?
 
@@ -417,7 +418,7 @@ How about on **unseen points** $\x$?
 
 ## Finite sum setting
 
-In practice, we often use a finite training set $(\x\_1, \y\_1), \dots, (\x\_n, \y\_n)$.
+In practice, we often use a **finite training set** $(\x\_1, \y\_1), \dots, (\x\_n, \y\_n)$.
 
 $$
 \min\_{g \in \cF(\cX \times \cY)}
@@ -565,11 +566,11 @@ $$
 
 ## Take aways
 
-- Dualize then parameterize (and not the opposite).
+- **Dualize then parameterize** (and not the opposite).
 
   * This makes strong duality work.
 
-- Treat an intractable quantity (the log-partition) as an optimization variable (Lagrange multiplier)
+- Treat an **intractable quantity** (the log-partition) as an **optimization variable** (Lagrange multiplier)
 
   * The Lagrange multiplier $\tau(\x)$ corresponds to the equality constraint 
 $$
@@ -578,6 +579,8 @@ $$
 
   * In practice, since we do not reach the optimal Lagrange multiplier, this amounts to relaxing the equality constraint.
 
-- Parameterize the Lagrange multiplier (dual variable) as a neural network.
+- **Parameterize** the Lagrange multiplier (dual variable) as a **neural network**.
+
+  * This is an approximation to optimizing over the space of functions.
 
   * This allows us to approximate the log-partition on unseen $\x$ points.
