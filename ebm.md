@@ -50,6 +50,7 @@ Michaël Sander, Vincent Roulet, Tianlin Liu, Mathieu Blondel
 
 $\cX$: input space <br>
 $\cY$: combinatorially-large discrete output space
+--
 
 <br>
 
@@ -96,6 +97,8 @@ $$
 
 $\Phi(\thetav, \y)$ coupling function <br>
 $\thetav \coloneqq h(\x)$ is a model function (e.g., neural net) producing the logits $\thetav$.
+
+--
 
 <br>
 
@@ -180,6 +183,8 @@ $$
 $\cC$ is a convex superset of $\cY$, for example, $\cC = \mathrm{conv}(\cY)$.
 
 Typically, **rounding** the solution from $\cC$ to $\cY$ is necessary.
+
+--
 
 **Example**
 
@@ -269,11 +274,15 @@ $$(\x, \y) \mapsto
 
 where $\cC$ is a convex superset of $\cY$, for example, $\cC = \mathrm{conv}(\cY)$.
 
+--
+
 **Advantages**
 
 They circumvent the need for computing the log-partition.
 
 Gradients are easy to compute thanks to envelope theorems.
+
+--
 
 **Disadvantage**
 
@@ -292,6 +301,7 @@ $$
 \LSE\_g(\x)
 = \max\_{p \in \cP(\cY|\x)} \EE_{\y \sim p(\cdot|\x)} \left[g(\x, \y) - \log p(\y|\x)\right]
 $$
+--
 
 <br>
 
@@ -322,6 +332,7 @@ $$
 \min\_{\tau \in \RR}
 \tau + \EE\_{\y' \sim q(\cdot|\x)} \left[ \exp(g(\x, \y') - \tau) - 1\right]
 $$
+--
 
 <br>
 
@@ -329,6 +340,7 @@ $\tau$ is the **Lagrange multiplier** associated with the constraint for $\x \in
 $$
 \sum_{\y \in \cY} p\_g(\y|\x) = 1
 $$
+--
 
 <br>
 The optimal variable **exactly coincides** with the log-partition
@@ -356,6 +368,7 @@ $$
 One Lagrange multiplier for **each** $\x \in \cX$ .smaller[⇒] $\tau$ is a **function** from $\cX$ to $\RR$!
 
 <br>
+--
 **Recovers the MLE solution**
 
 $$
@@ -382,7 +395,7 @@ $$
 Both $g$ and $\tau$ are scalar-valued **neural networks**.
 
 <br>
-
+--
 **Doubly stochastic gradient estimator**
 
 * Samples $(\x, \y)$ from the data distribution
@@ -408,6 +421,8 @@ We have $\tau\_\v(\x) \approx \LSE\_{g\_\w}(\x)$ on training points $\x$.
 
 How about on **unseen points** $\x$?
 
+--
+
 <br>
 
 .center.width-100[![](./figures/ebm/generalization_ability.png)]
@@ -428,7 +443,7 @@ $$
 $$
 
 <br>
-
+--
 This is equivalent to
 
 $$
@@ -446,11 +461,13 @@ Recall that
 $$
 p\_g(\y|\x) \coloneqq \frac{q(\y|\x)\exp(g(\x, \y))}{\sum\_{\y' \in \cY}q(\y'|\x)\exp(g(\x, \y'))}
 $$
+--
 
 This is equivalent to
 $$
 p\_g(\cdot|\x) = \argmax_{p \in \cP(\cY)} \langle g(\x, \cdot), p \rangle - \mathrm{KL}(p, q(\cdot|\x))
 $$
+--
 
 <br>
 
@@ -476,6 +493,7 @@ g(\x, \y) &\coloneqq \langle \u, \y \rangle \in \RR
 \end{aligned}
 $$
 Each $u\_i$ is the weight of label $i \in [k]$.
+--
 
 
 **Pairwise model** (Ising model)
@@ -502,6 +520,7 @@ $$
 =
 [\u]\_{\ge 0}
 $$
+--
 
 <br>
 
@@ -543,6 +562,7 @@ $$
 &\thetav \mapsto \argmax\_{\y \in \cP} \langle \thetav, \y \rangle
 \end{aligned}
 $$
+--
 
 **Birkhoff polytope**
 
@@ -586,6 +606,8 @@ $$
 
   * This makes strong duality work.
 
+--
+
 - Treat an **intractable quantity** (the log-partition) as an **optimization variable** (Lagrange multiplier)
 
   * The Lagrange multiplier $\tau(\x)$ corresponds to the equality constraint 
@@ -594,6 +616,8 @@ $$
 $$
 
   * In practice, since we do not reach the optimal Lagrange multiplier, this amounts to relaxing the equality constraint.
+
+--
 
 - **Parameterize** the Lagrange multiplier (dual variable) as a **neural network**.
 
