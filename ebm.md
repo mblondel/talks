@@ -519,9 +519,17 @@ Can be solved by projected gradient descent or coordinate descent.
 
 ## Multi-label classification: loss comparison
 
+<br><br>
+
+.center.width-100[![](./figures/ebm/multilabel_loss_cmp.png)]
+
 ---
 
 ## Multi-label classification: model comparison
+
+<br><br>
+
+.center.width-100[![](./figures/ebm/multilabel_model_cmp.png)]
 
 ---
 
@@ -558,9 +566,17 @@ $$
 
 ## Label ranking: loss comparison
 
+<br><br>
+
+.center.width-100[![](./figures/ebm/label_ranking_loss_cmp.png)]
+
 ---
 
 ## Label ranking: model comparison
+
+<br><br>
+
+.center.width-100[![](./figures/ebm/label_ranking_model_cmp.png)]
 
 ---
 
