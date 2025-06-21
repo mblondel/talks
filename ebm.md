@@ -307,7 +307,7 @@ which is known to suffer from **high variance**
 
 ---
 
-## Another variational formulation of the log-sum-exp
+## <u>Another</u> variational formulation of the log-sum-exp
 
 <br>
 
@@ -385,8 +385,8 @@ Both $g$ and $\tau$ are scalar-valued **neural networks**.
 
 * Samples $(\x, \y)$ from the data distribution
 * Samples $\y'$ from the prior distribution $q(\cdot|\x)$
-* Unbiased!
-* For very large spaces $\cY$, a good prior $q$ would be very useful!
+
+Unbiased! For very large spaces $\cY$, a good prior $q$ could be useful!
 
 ---
 
@@ -539,17 +539,17 @@ Can be solved by projected gradient descent or coordinate descent.
 
 ## Label ranking
 
-**Permutahedron**
-
+**Permutahedron:** oracle is an argsort
 $$
 \begin{aligned}
 &\thetav \coloneqq h(\x) \in \RR^k \\\\
 &\thetav \mapsto \argmax\_{\y \in \cP} \langle \thetav, \y \rangle
 \end{aligned}
 $$
+
 --
 
-**Birkhoff polytope**
+**Birkhoff polytope:** oracle is the Hungarian algorithm
 
 $$
 \begin{aligned}
