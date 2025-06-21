@@ -79,43 +79,17 @@ $$
 
 <br>
 
-$g(\x, \y)$: scalar-valued "affinity" function.
+$g(\x, \y)$: scalar-valued **"affinity"** function (typically a neural network).
 
 $q(\y|\x)$ prior distribution, can be used to "guide" the EBM.
+
+<br>
+
+They define a **Gibbs / Boltzmann distribution**.
 
 <br><br>
 
 EBMs are also used in the unsupervised setting to learn a distribution $p\_g(\x)$.
-
----
-
-## Model decomposition
-
-$$
-g(\x, \y) \coloneqq \Phi(h(\x), \y)
-$$
-
-$\Phi(\thetav, \y)$ coupling function <br>
-$\thetav \coloneqq h(\x)$ is a model function (e.g., neural net) producing the logits $\thetav$.
-
---
-
-<br>
-
-**Bilinear coupling**
-$$
-\Phi(\thetav, \y) \coloneqq \langle \thetav, \y \rangle
-$$
-
-<br>
-
-**Gibbs / Boltzmann distribution**
-
-EBMs coincide with the Gibbs / Boltzmann distribution (exponential family) with
-**natural parameters** $\thetav$ and **base measure** $q$.
-$$
-p\_g(\y|\x) \coloneqq \frac{q(\y|\x)\exp(\langle \thetav, \y \rangle)}{\sum\_{\y' \in \cY}q(\y'|\x)\exp(\langle \thetav, \y' \rangle)}
-$$
 
 ---
 
@@ -151,7 +125,7 @@ $$
 
 ---
 
-## Computing the mode: linear coupling case
+## Computing the mode: bilinear coupling case
 
 
 If $g(\x, \y) = \langle h(\x), \y \rangle$ 
@@ -160,6 +134,8 @@ and $q$ is uniform, then
 <br>
 
 $$
+\max\_{\y \in \cY} g(\x, \y)
+=
 \max\_{\y \in \cY} \langle h(\x), \y \rangle
 = 
 \max\_{\y \in \mathrm{conv}(\cY)} \langle h(\x), \y \rangle
@@ -171,11 +147,20 @@ This is a **linear program**.
 
 Dedicated oracles exist for specific $\cY$.
 
+--
+
+<br>
+**Examples**
+
+If $\cY$ is the set of permutations, we can use an **argsort**.
+
+If $\cY$ is the set of permutation matrices, we can use the **Hungarian algorithm**.
+
 ---
 
 ## Computing the mode: nonlinear coupling case
 
-More generally we can solve the **relaxed problem**
+More generally we can solve a **continuous relaxation**
 $$
 \x \mapsto \argmax\_{\muv \in \cC} g(\x, \muv)
 $$
@@ -206,7 +191,7 @@ $p\_g(\y|\x) \propto q(\y|\x) \exp(g(\x, \y))$
 
 <br>
 
-Samplers are usually based on Markov-Chain Monte-Carlo (MCMC).
+Samplers are usually based on **Markov-Chain Monte-Carlo (MCMC)**.
 
 * Continuous $\cY$: **Langevin**
 * Discrete $\cY$: **Gibbs sampling**
@@ -496,7 +481,7 @@ Each $u\_i$ is the weight of label $i \in [k]$.
 --
 
 
-**Pairwise model** (Ising model)
+**Pairwise model (Ising model)**
 $$
 \begin{aligned}
 (\u, \U) &\coloneqq h(\x) \in \RR^k \times \RR^{k \times k} \\\\
@@ -525,7 +510,7 @@ $$
 <br>
 
 
-**Pairwise model** (Ising model)
+**Pairwise model (Ising model)**
 
 $$
 (\u, \U) \mapsto \argmax\_{\y \in \\{0,1\\}^k} \langle \u, \y \rangle + \frac{1}{2} \langle \y, \U \y \rangle
