@@ -57,7 +57,7 @@ $\cY$: combinatorially-large discrete output space
 **Examples**
 
 * Multi-label classification: $\cY$ is the power set of $[k]$, with $|\cY| = 2^k$
-* Label ranking: $\cY$ is the set of permutations, with $|\cY| = k!$
+* Label ranking: $\cY$ is the set of permutations of $[k]$, with $|\cY| = k!$
 
 .grid[
 .kol-1-2.left.width-90[
@@ -109,9 +109,9 @@ $$
 
 <br>
 
-**Gibbs distribution**
+**Gibbs / Boltzmann distribution**
 
-EBMs coincide with the Gibbs distribution (exponential family) with
+EBMs coincide with the Gibbs / Boltzmann distribution (exponential family) with
 **natural parameters** $\thetav$ and **base measure** $q$.
 $$
 p\_g(\y|\x) \coloneqq \frac{q(\y|\x)\exp(\langle \thetav, \y \rangle)}{\sum\_{\y' \in \cY}q(\y'|\x)\exp(\langle \thetav, \y' \rangle)}
@@ -206,10 +206,10 @@ $p\_g(\y|\x) \propto q(\y|\x) \exp(g(\x, \y))$
 
 <br>
 
-Designing a sampler is typically **case by case**.
+Samplers are usually based on Markov-Chain Monte-Carlo (MCMC).
 
 * Continuous $\cY$: **Langevin**
-* Binary vectors $\cY$: **Gibbs sampling**
+* Discrete $\cY$: **Gibbs sampling**
 
 ---
 
@@ -499,7 +499,7 @@ Each $u\_i$ is the weight of label $i \in [k]$.
 **Pairwise model** (Ising model)
 $$
 \begin{aligned}
-\u, \U &\coloneqq h(\x) \in \RR^k \times \RR^{k \times k} \\\\
+(\u, \U) &\coloneqq h(\x) \in \RR^k \times \RR^{k \times k} \\\\
 g(\x, \y) &\coloneqq \langle \u, \y \rangle + \frac{1}{2} \langle \y, \U \y \rangle \in \RR
 \end{aligned}
 $$
