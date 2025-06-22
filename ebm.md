@@ -35,7 +35,7 @@ Michaël Sander, Vincent Roulet, Tianlin Liu, Mathieu Blondel
 * What are energy-based models? (EBMs)
 * Inference with EBMs
 * Existing approaches for learning EBMs
-* Proposed learning approach
+* Proposed approach for learning EBMs
 * Experiments
 
 ---
@@ -81,7 +81,7 @@ $$
 
 $g(\x, \y)$: scalar-valued **"affinity"** function (typically a neural network).
 
-$q(\y|\x)$ prior distribution, can be used to "guide" the EBM.
+$q(\y|\x)$: easy-to-sample **prior** distribution.
 
 <br>
 
@@ -101,7 +101,9 @@ EBMs are also used in the unsupervised setting to learn a distribution $p\_g(\x)
 
 * **Mode**
 $$
-\x \mapsto \argmax\_{\y \in \cY} p\_g(\y|\x) 
+\x \mapsto 
+\argmax\_{\y \in \cY} p\_g(\y|\x) 
+= \argmax\_{\y \in \cY} q(\y|\x) g(\x, \y)
 $$
 
 <br>
@@ -160,12 +162,19 @@ If $\cY$ is the set of permutation matrices, we can use the **Hungarian algorith
 
 ## Computing the mode: nonlinear coupling case
 
-More generally we can solve a **continuous relaxation**
+More generally if $q$ is uniform we need to solve
+$$
+\x \mapsto \argmax\_{\y \in \cY} g(\x, \y)
+$$
+--
+We can solve a **continuous relaxation**
 $$
 \x \mapsto \argmax\_{\muv \in \cC} g(\x, \muv)
 $$
 
 $\cC$ is a convex superset of $\cY$, for example, $\cC = \mathrm{conv}(\cY)$.
+
+--
 
 Typically, **rounding** the solution from $\cC$ to $\cY$ is necessary.
 
@@ -206,33 +215,39 @@ Samplers are usually based on **Markov-Chain Monte-Carlo (MCMC)**.
 
 <br>
 
+MLE is equivalent to minimizing the negative log-likelihood
 $$
-\begin{aligned}
 \cL\_{\mathrm{MLE}}(g) 
-&\coloneqq \EE\_{(\x,\y)} \left[-\log p\_g(\y|\x)\right]\\\\
-&= \EE\_{\x} \left[\LSE\_g(\x)\right] - \EE\_{(\x,\y)} \left[g(\x, \y) -\log(q(\y|\x))\right]
-\end{aligned}
+\coloneqq \EE\_{(\x,\y)} \left[-\log p\_g(\y|\x)\right]
 $$
 
-<br>
-
-The **log-partition function** (a.k.a. **log-sum-exp**) is intractable in general.
+--
 
 <br>
 
+By plugging the definition of $p\_g$, we get
+$$
+\cL\_{\mathrm{MLE}}(g) 
+= \EE\_{\x} \left[\LSE\_g(\x)\right] - \EE\_{(\x,\y)} \left[g(\x, \y)\right] + \mathrm{const}
+$$
+where we defined the **log-partition function** (a.k.a. **log-sum-exp**)
 $$
 \LSE\_g(\x) \coloneqq \log \sum_{\y' \in \cY} q(\y'|\x) \exp(g(\x,\y'))
 $$
 
-<br>
+--
 
-Efficient **oracles** available only in specific cases.
+Efficient oracles available in some cases but **intractable in general**.
 
 ---
 
 ## Contrastive divergences
 
 Originally proposed for **RBMs** but they can be used for **EBMs** as well.
+
+Contrasts model **samples** and groud-truth samples.
+
+--
 
 Gradient of the MLE objective
 
@@ -259,6 +274,8 @@ $$(\x, \y) \mapsto
 
 where $\cC$ is a convex superset of $\cY$, for example, $\cC = \mathrm{conv}(\cY)$.
 
+Contrasts model **mode** and groud-truth samples.
+
 --
 
 **Advantages**
@@ -284,8 +301,9 @@ $$
 **Variational formulation** of the log-sum-exp for all $\x \in \cX$
 $$
 \LSE\_g(\x)
-= \max\_{p \in \cP(\cY|\x)} \EE_{\y \sim p(\cdot|\x)} \left[g(\x, \y) - \log p(\y|\x)\right]
+= \max\_{p \in \cP(\cY|\x)} \EE_{\y \sim p(\cdot|\x)} \left[g(\x, \y)\right] - \mathrm{KL}(p(\cdot|\x),q(\cdot|x))
 $$
+
 --
 
 <br>
@@ -294,7 +312,7 @@ By plugging this formulation in the MLE objective, we obtain
 $$
 \min\_{g \in \cF(\cX \times \cY)}
 \max\_{p \in \cP(\cY|\cX)}
-\EE\_\x \EE\_{\y' \sim p(\cdot|\x)}[g(\x, \y') - \log p(\y')] - \EE\_{(\x,\y)}[g(\x, \y)]
+\EE\_\x \EE\_{\y' \sim p(\cdot|\x)}[g(\x, \y')] - \EE\_{(\x,\y)}[g(\x, \y)] - \mathrm{KL}(p, q)
 $$
 
 <br>
@@ -333,8 +351,6 @@ $$
 \tau^\star = \LSE\_g(\x)
 $$
 
-We are treating the log-partition as an **optimization variable** rather than as a quantity to compute.
-
 ---
 
 ## Proposed min-min objective
@@ -351,6 +367,10 @@ $$
 
 <br>
 One Lagrange multiplier for **each** $\x \in \cX$ .smaller[⇒] $\tau$ is a **function** from $\cX$ to $\RR$!
+
+--
+
+We are treating the log-partition as an **optimization variable** rather than as a quantity to compute.
 
 <br>
 --
@@ -386,7 +406,7 @@ Both $g$ and $\tau$ are scalar-valued **neural networks**.
 * Samples $(\x, \y)$ from the data distribution
 * Samples $\y'$ from the prior distribution $q(\cdot|\x)$
 
-Unbiased! For very large spaces $\cY$, a good prior $q$ could be useful!
+Unbiased! 
 
 ---
 
@@ -403,6 +423,8 @@ class: middle
 In practice we parameterize $\tau\_\v(\x)$ as a neural network with parameters $\v \in \cV$.
 
 We have $\tau\_\v(\x) \approx \LSE\_{g\_\w}(\x)$ on training points $\x$.
+
+--
 
 How about on **unseen points** $\x$?
 
@@ -429,7 +451,7 @@ $$
 
 <br>
 --
-This is equivalent to
+This is **equivalent** to
 
 $$
 \min\_{g \in \cF(\cX \times \cY)}
@@ -437,6 +459,7 @@ $$
 \frac{1}{n} \sum\_{i=1}^n
 \left(\tau\_i + \EE\_{\y' \sim q(\cdot|\x\_i)} \left[ \exp(g(\x\_i, \y') - \tau\_i) - 1\right] - g(\x\_i, \y\_i)\right)
 $$
+In this case, a neural network is not needed for $\tau$.
 
 ---
 
@@ -450,7 +473,7 @@ $$
 
 This is equivalent to
 $$
-p\_g(\cdot|\x) = \argmax_{p \in \cP(\cY)} \langle g(\x, \cdot), p \rangle - \mathrm{KL}(p, q(\cdot|\x))
+p\_g(\cdot|\x) = \argmax\_{p \in \cP(\cY|\x)} \EE\_{\y \sim p(\cdot|\x)}[g(\x, \y)] - \mathrm{KL}(p(\cdot|\x), q(\cdot|\x))
 $$
 --
 
@@ -458,7 +481,9 @@ $$
 
 Our approach easily generalizes to learning distributions of the form
 $$
-p\_g^f(\cdot|\x) \coloneqq \argmax_{p \in \cP(\cY)} \langle g(\x, \cdot), p \rangle - D\_f(p, q(\cdot|\x))
+p\_g^f(\cdot|\x) 
+\coloneqq 
+\argmax\_{p \in \cP(\cY|\x)} \EE\_{\y \sim p(\cdot|\x)}[g(\x, \y)] - D_f(p(\cdot|\x), q(\cdot|\x))
 $$
 where $D\_f$ is an **f-divergence**.
 
