@@ -198,6 +198,8 @@ where
 $p\_g(\y|\x) \propto q(\y|\x) \exp(g(\x, \y))$
 ?
 
+--
+
 <br>
 
 Samplers are usually based on **Markov-Chain Monte-Carlo (MCMC)**.
@@ -245,17 +247,18 @@ Efficient oracles available in some cases but **intractable in general**.
 
 Originally proposed for **RBMs** but they can be used for **EBMs** as well.
 
-Contrasts model **samples** and groud-truth samples.
-
 --
 
 Gradient of the MLE objective
 
 $$
-\nabla\_\w \cL(g\_\w)
+\nabla\_\w \cL\_{\mathrm{MLE}}(g\_\w)
 = \EE\_{\x} \EE\_{\y' \sim p\_{g\_\w}(\cdot|\x)}
 [\nabla\_\w g\_\w(\x, \y')] - \EE\_{(\x,\y)} \nabla\_\w g\_\w(\x, \y)
 $$
+Contrasts model **samples** and groud-truth samples.
+
+--
 
 <br>
 
