@@ -5,13 +5,19 @@ $$
 \gdef\x{{\bm{x}}}
 \gdef\y{\bm{y}}
 \gdef\cA{\mathcal{A}}
+\gdef\cF{\mathcal{F}}
+\gdef\cL{\mathcal{L}}
+\gdef\cM{\mathcal{M}}
 \gdef\cP{\mathcal{P}}
+\gdef\cS{\mathcal{S}}
+\gdef\cT{\mathcal{T}}
 \gdef\cX{\mathcal{X}}
 \gdef\cY{\mathcal{Y}}
 \gdef\RR{\mathbb{R}}
 \gdef\EE{\mathbb{E}}
 \gdef\ebm{{\mathrm{EBM}}}
 \gdef\arm{{\mathrm{ARM}}}
+\gdef\eos{{\mathrm{EOS}}}
 $$
 
 # Autoregressive Language Models are Secretly Energy-Based Models
@@ -23,11 +29,47 @@ $$
 
 ---
 
+## Introduction
+
+* Autoregressive models (ARMs)
+
+  * The dominant paradigm for LLMs
+
+  * On first sight, they appear myopic (incapable of planning)
+
+  * During pretraining, we train to predict the next token conditioned on ground-truth context. This is known as **teacher forcing**
+    and has been criticized for introducing exposure bias.
+
+* Energy-based models (EBMs)
+
+  * Another class of models, much less used in practice.
+
+  * They pose many computational challenges.
+
+* This paper
+
+  * EBMs provide a useful framework to better understand ARMs
+
+  * ARMs inherently have the ability to lookahead, despite being based on next-token
+
+  * Teacher forcing is optimal in function space.
+
+---
+
+class: middle
+
+.center.width-75[![](./figures/ebm_arm/diagram_full.png)]
+
+.center[**Roadmap for this talk**]
+
+---
+
 # Outline
 
 * Energy-based models (EBMs)
 * Autoregressive models (ARMs)
-* Bijection between ARM logits and EBM logits
+* Learning from examples vs. Learning from reward functions
+* Bijections: distribution space vs. logit space
 * Optimality of teacher forcing
 
 ---
@@ -36,6 +78,8 @@ $$
 
 ---
 
+class: middle
+
 ## Energy-based models (EBMs)
 
 EBMs are sequence-level Gibbs / Boltzmann distributions
@@ -43,6 +87,11 @@ $$
 p\_R^\ebm(\y|\x) \coloneqq \frac{\exp(R(\x, \y))}{\sum_{\y' \in \cY} \exp(R(\x, \y'))}
 $$
 $R$ scores the affinity between the prompt $\x$ and the **entire** response $\y$.
+
+EBMs are undirected graphical models (Markov random fields).
+
+Any $p(\y|\x) > 0$ can be written as $p^\ebm\_R(\y|\x)$. Indeed, we can just choose
+$R(\x, \y) \coloneqq \log p(\y|\x)$.
 
 ---
 
@@ -60,9 +109,13 @@ $R$ scores the affinity between the prompt $\x$ and the **entire** response $\y$
 
   * Intractable normalization constant.
 
-  * Difficult to sample from (needs to resort to MCMC).
+  * Difficult to sample from
 
-  * Difficult to train from prompt-response pairs (log-probabilities are intractable).
+      * Resort to MCMC algorithms (Langevin, Gibbs)
+
+      * Resort to gradient descent at inference time (needs soft tokens?)
+
+  * Difficult to train from examples (log-probabilities are intractable).
 
 ---
 
@@ -74,43 +127,12 @@ p\_R^\ebm(\y|\x)  = \exp(R(\x, \y) - A\_R^\ebm(\x))
 $$
 where we used the sequence-level log-partition
 $$
-A\_R^\ebm(\x)) \coloneqq \log \sum_{\y \in \cY} \exp(R(\x, \y))
-$$
-
----
-
-## Why studying the equivalence between EBMs and ARMs?
-
-<br/>
-
-**Any strictly positive distribution can be written as an EBM**
-
-Indeed, for all $p(\y|\x) > 0$,
-$$
-R(\x, \y) \coloneqq \log p(\y|\x)
-\implies
-p(\y|\x) = p^\ebm\_R(\y|\x)
+A\_R^\ebm(\x) \coloneqq \log \sum_{\y \in \cY} \exp(R(\x, \y))
 $$
 
 <br/>
 
-**The optimal solution of maxent RL is an EBM**
-
-$$
-p^\star \coloneqq \argmax\_{p \in \cP(\cY|\cX)} 
-\EE\_X \EE\_{Y \sim p} \left[R(X, Y) - \mathrm{KL}(p(\cdot|X), p\_{\mathrm{ref}}(\cdot|X))\right]
-$$
-
-$$
-R\_{\mathrm{ref}}(\x, \y) \coloneqq \log p\_{\mathrm{ref}}(\y|\x)
-$$
-
-<br/>
-
-$$
-\implies
-p^\star = p^\ebm\_{R + R\_{\mathrm{ref}}}
-$$
+.center.width-50[![](./figures/ebm_arm/diagram_ebm.png)]
 
 ---
 
@@ -122,7 +144,7 @@ $$
 
 Autoregressive models are factorized as
 $$
-p^\arm\_q(\y|\x) \coloneqq \prod\_{t=1}^T \pi\_q(y\_t | \x \oplus \y\_{< t})
+p^\arm\_q(\y|\x) \coloneqq \prod\_{t=1}^{|\y|} \pi\_q(y\_t | \underbrace{\x \oplus \y\_{< t}}\_{\s\_t})
 $$
 
 where
@@ -132,6 +154,8 @@ $$
 $$
 
 $q$ scores the next token $y\_t$ given the context (prefix) $\s\_t$.
+
+ARMs are directed graphical models (Bayesian networks).
 
 ---
 
@@ -149,6 +173,22 @@ $q$ scores the next token $y\_t$ given the context (prefix) $\s\_t$.
 
   * Must causal Transformers.
 
+---
+
+## Token-level log-partition
+
+The next-token distribution can be rewritten as
+$$
+\pi\_q(y\_t|\s\_t)  = \exp(q(\s\_t, y\_t) - V\_q(\s\_t))
+$$
+where we used the token-level log-partition
+$$
+V\_q(\s\_t) \coloneqq \log \sum_{j \in \cA} \exp(q(\s\_t, j))
+$$
+
+<br/>
+
+.center.width-50[![](./figures/ebm_arm/diagram_arm.png)]
 
 ---
 
@@ -156,6 +196,201 @@ $q$ scores the next token $y\_t$ given the context (prefix) $\s\_t$.
 
 ---
 
+## Learning from prompt-response pairs (SFT)
+
+Expected risk of EBM
+$$
+\cL^\ebm(R) \coloneqq \EE\_{(X,Y) \sim \rho} \left[-\log p^\ebm\_R(\y|\x)\right]
+$$
+
+Expected risk of ARM
+$$
+\begin{aligned}
+\cL^\arm(q) &\coloneqq \EE\_{(X,Y) \sim \rho} \left[-\log p^\arm\_q(\y|\x)\right] \\\\
+&= \EE\_{(X,Y) \sim \rho} \left[-\sum\_{t=1}^{|\y|}\log \pi\_q(y\_t|\x \oplus \y\_{< t}) \right]
+\end{aligned}
+$$
+The negative log-likelihood of ARMs naturally leads to **teacher forcing**.
+
+---
+
+## Learning from reward functions (and prompts)
+
+$$
+p^\star \coloneqq \argmax\_{p \in \cP(\cY|\cX)} 
+\EE\_X \EE\_{Y \sim p} \left[R(X, Y) - \mathrm{KL}(p(\cdot|X), p\_{\mathrm{ref}}(\cdot|X))\right]
+$$
+
+**Optimal solution of maxent RL is an EBM**
+
+$$
+R\_{\mathrm{ref}}(\x, \y) \coloneqq \log p\_{\mathrm{ref}}(\y|\x)
+$$
+
+$$
+\implies
+p^\star = p^\ebm\_{R + R\_{\mathrm{ref}}}
+$$
+
+**Maxent RL as distilling an EBM into an ARM**
+
+$$
+\argmin\_{q \in \cF(\cS \times \cA)} \EE\_X \mathrm{KL}(p^\ebm\_R(\cdot|X), p^\arm\_q(\cdot|X))
+$$
+
+This is the idea of **amortized sampling**. We spend some effort at train time to make sampling easier at inference time.
+
+EBMs are also known as **unnormalized distributions**. We can draw inspiration from this literature to perform RL! (e.g., noise contrastive estimation)
+
+---
+
+{{OUTLINE}}
+
+---
+
+## From next-token to sequence-level distribution, and vice-versa
+
+.pull-right.width-50[![](./figures/ebm_arm/diagram_chain_rule.png)]
+
+* From $\pi \in \cP(\cA|\cS)$ to $p \in \cP(\cY|\cX)$ (easy direction)
+$$
+p(\y|\x) \coloneqq \prod\_{t=1}^{|\y|} \pi(y\_t | \x \oplus \y_{< t})
+$$
+
+* From $p \in \cP(\cY|\cX)$ to $\pi \in \cP(\cA|\cS)$ (difficult direction)
+$$
+\begin{aligned}
+p(\y\_{\le t}|\x) 
+&\coloneqq \sum\_{y\_{t+1} \in \cA} p(\y\_{\le t}, y\_{t+1}|\x) \\\\
+\pi(y\_t|\x, \y\_{< t}) &\coloneqq \frac{p(\y\_{\le t}|\x)}{p(\y\_{\le t-1}|\x)}
+\end{aligned}
+$$
+
+---
+
+## Decomposition of R
+
+Without loss of generality, any $R \colon \cX \times \cY \to \RR$ decomposes as
+$$
+R\_r(\x, \y) \coloneqq \sum\_{t=1}^{|\y|} r(\underbrace{\x \oplus \y\_{< t}}\_{\s\_t}, y\_t)
+$$
+where $r \colon \cS \times \cA \to \RR$
+
+Therefore, any $p^\ebm\_R$ can be rewritten as $p^\ebm\_{R\_r}$
+
+---
+
+## Bijective mapping between ARM and EBM logits
+
+.pull-right.width-40[![](./figures/ebm_arm/diagram_logits.png)]
+
+We define the mapping $q = \cM(r)$ as
+$$
+q(\s\_t, y\_t) \coloneqq
+\begin{cases}
+r(\s\_t, y\_t) &\text{if} ~ y\_t = \eos \\\\
+r(\s\_t, y\_t) + V\_q(\s\_t \oplus y\_t) &\text{if} ~ y\_t \neq \eos
+\end{cases}
+$$
+$\cM$ is bijective (i.e., $\cM^{-1}$ exists and is unique). <br/>
+Computational cost of explicit conversion is $O(V^T)$.
+
+
+<div style="border: 2px solid #444; padding: 15px; border-radius: 8px; background-color: #f9f9f9;">
+If $q = \cM(r)$, then for all $\x \in \cX$ and $\y \in \cY$,
+
+$$
+\begin{aligned}
+p^\ebm_{R_r}(\y | \x) &= p^\arm_q(\y | \x) \\
+A^\ebm_{R_r}(\x) &= V_q(\x)
+\end{aligned}
+$$
+
+</div>
+
+Another way to put this is, if $q = \cM(r)$, then for all $\x \in \cX$,
+$$
+\mathrm{KL}(p^\ebm\_{R\_r}(\cdot|\x), p^\arm\_q(\cdot|\x)) = 0.
+$$
+
+---
+
+class: middle
+
+.center.width-75[![](./figures/ebm_arm/diagram_full.png)]
+
+.center[**Summary**]
+
+---
+
+## Optimality of teacher forcing
+
+Thanks to the bijective mapping $\cM$, we have
+
+<div style="border: 2px solid #444; padding: 15px; border-radius: 8px; background-color: #f9f9f9;">
+
+$$
+\min_{q \in \cF(\cS \times \cA)} \cL^\arm(q)
+= 
+\min_{r \in \cF(\cS \times \cA)} 
+\cL^\ebm(R_r)
+= 
+\min_{R \in \cF(\cX \times\cY)} 
+\cL^\ebm(R)
+$$
+
+</div>
+
+Suppose we obtained $q^\star$ through teacher forcing. Then,
+$$
+p^\arm\_{q^\star}(\y|\x) = p^\ebm\_{R^\star}(\y|\x)
+$$
+
+But we haven't done any explicit conversion to obtain $q^\star$!
+
+---
+
+## KL bound for the function approximation setting
+
+<div style="border: 2px solid #444; padding: 15px; border-radius: 8px; background-color: #f9f9f9;">
+
+For any $r \in \cF(\cS \times \cA)$ and $q \in \cF(\cS \times \cA)$
+
+$$
+\mathrm{KL}(p^\ebm_{R_r}(\cdot|\x), p^\arm_q(\cdot|\x))
+\le 2T \max_{\substack{\s \in \cS(\x)\\ y \in \cA}} |q^\star(\s, y) - q(\s, y)|
+$$
+
+where $q^\star = \cM(r)$
+</div>
+
+From Furuya et al. (2025, Theorem 2), there exists a causal Transformer such that
+$$
+\max_{\substack{\s \in \cS(\x), y \in \cA}}|q^\star(\s,y)- \cT(\s)[y]|\leq \varepsilon.
+$$
+
+Therefore
+$$
+\mathrm{KL}(p^\ebm\_{R\_r}(\cdot|\x), p^\arm\_{\cT(\cdot)[\cdot]}(\cdot|\x))
+\le 2T \varepsilon.
+$$
+
+---
+
+## Numerical validation
+
+.center.width-100[![](./figures/ebm_arm/experiment.png)]
+
+---
+
+## Recap
+
+* Autoregressive models inherently have the ability to plan ahead.
+
+* Teacher is structurally optimal. Failures must come model approximation or 
+
 ## Future work
+
+* Better under the effect of model approximation and optimization error
 
 * How much do chain-of-thoughts help with estimating $V\_q$?
