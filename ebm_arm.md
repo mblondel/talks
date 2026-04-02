@@ -33,11 +33,11 @@ $$
 
 * **Autoregressive models (ARMs)**
 
-  * Despite being the dominant paradigm for LLMs, ARMs remain relatively poorly understood. 
+  * Despite being the **dominant** paradigm for LLMs, ARMs remain relatively poorly understood. 
 
-  * On first sight, they appear myopic: they just predict one token at a time. Yet, their empirical success is astonishing!
+  * On first sight, they appear **myopic**: they just predict one token at a time. Yet, their empirical success is astonishing!
 
-  * During pretraining, we train to predict the next token conditioned on the ground-truth context. This is known as teacher forcing
+  * During pretraining, we train to predict the next token conditioned on the ground-truth context. This is known as **teacher forcing**
     and has been criticized for introducing "exposure bias".
 
 --
@@ -52,9 +52,9 @@ $$
 
   * We use EBMs to help us better understand ARMs.
 
-  * ARMs can perfectly fit EBMs. To do so, they need to learn the ability to lookahead!
+  * ARMs can perfectly fit EBMs. To do so, they need to learn the ability to **lookahead**!
 
-  * Teacher forcing is optimal in function space.
+  * **Teacher forcing** is optimal in function space.
 
 ---
 
@@ -173,7 +173,7 @@ ARMs are directed graphical models (Bayesian networks).
 
   * Easy to sample from (by ancestral sampling).
 
-  * Easy to train from examples (log-probabilities are intractable).
+  * Easy to train from examples (log-probabilities are tractable).
 
 * **Cons**
 
@@ -212,7 +212,7 @@ The gradient of the log-partition is a mapping from $q(\s\_t, \cdot)$ to $\pi(\c
 
 **Expected risk of EBM**
 $$
-\cL^\ebm(R) \coloneqq \EE\_{(X,Y) \sim \rho} \left[-\log p^\ebm\_R(\y|\x)\right]
+\cL^\ebm(R) \coloneqq \EE\_{(X,Y) \sim \rho} \left[-\log p^\ebm\_R(Y|X)\right]
 $$
 We train the model to predict the entire $\y$ given $\x$.
 
@@ -221,8 +221,8 @@ We train the model to predict the entire $\y$ given $\x$.
 **Expected risk of ARM**
 $$
 \begin{aligned}
-\cL^\arm(q) &\coloneqq \EE\_{(X,Y) \sim \rho} \left[-\log p^\arm\_q(\y|\x)\right] \\\\
-&= \EE\_{(X,Y) \sim \rho} \left[-\sum\_{t=1}^{|\y|}\log \pi\_q(y\_t|\x \oplus \y\_{< t}) \right]
+\cL^\arm(q) &\coloneqq \EE\_{(X,Y) \sim \rho} \left[-\log p^\arm\_q(Y|X)\right] \\\\
+&= \EE\_{(X,Y) \sim \rho} \left[-\sum\_{t=1}^{|Y|}\log \pi\_q(Y\_t|X \oplus Y\_{< t}) \right]
 \end{aligned}
 $$
 We train the model to predict the next token $y\_t$ based on the ground-truth
@@ -234,11 +234,11 @@ However, this is a natural consequence of using the negative log-likelihood!
 
 ---
 
-## Learning from reward functions (and prompts)
+## Learning from reward functions and prompts (RL)
 
 $$
 p^\star \coloneqq \argmax\_{p \in \cP(\cY|\cX)} 
-\EE\_X \EE\_{Y \sim p} \left[R(X, Y) - \mathrm{KL}(p(\cdot|X), p\_{\mathrm{ref}}(\cdot|X))\right]
+\EE\_X \EE\_{Y \sim p(\cdot|X)} \left[R(X, Y) - \mathrm{KL}(p(\cdot|X), p\_{\mathrm{ref}}(\cdot|X))\right]
 $$
 
 --
@@ -263,8 +263,6 @@ $$
 $$
 
 This is the idea of **amortized sampling**. We spend some effort at train time to make sampling easier at inference time.
-
-EBMs are also known as **unnormalized distributions**. We can draw inspiration from this literature to perform RL! (e.g., noise contrastive estimation)
 
 ---
 
@@ -391,9 +389,9 @@ $$
 
 --
 
-Suppose we obtained $q^\star$ and $R^\star$ using the above minimizations. Then,
+Suppose we obtained $q^\star$, $r^\star$, and $R^\star$ using the above minimizations. Then,
 $$
-p^\arm\_{q^\star}(\y|\x) = p^\ebm\_{R^\star}(\y|\x)
+p^\arm\_{q^\star}(\y|\x) = p^\ebm\_{R\_{r^\star}}(\y|\x) = p^\ebm\_{R^\star}(\y|\x)
 $$
 
 But we haven't done any explicit conversion to obtain $q^\star$!
@@ -435,15 +433,17 @@ $$
 
 ## Numerical validation
 
+<br/>
+
 .center.width-100[![](./figures/ebm_arm/experiment.png)]
 
 ---
 
 ## Recap
 
-* Autoregressive models inherently have the ability to plan ahead, through the (implicitly learned) soft value function!
+* Autoregressive models inherently have the ability to **lookahead**, through the (implicitly learned) soft value function!
 
-* Teacher forcing is optimal in the space of functions. 
+* Teacher forcing is **optimal** in the space of functions. 
 If learning failures occur, they  must necessarily come from model approximation or optimization error!
 
 --
