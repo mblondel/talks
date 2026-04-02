@@ -31,26 +31,28 @@ $$
 
 ## Introduction
 
-* Autoregressive models (ARMs)
+* **Autoregressive models (ARMs)**
 
-  * The dominant paradigm for LLMs
+  * Despite being the dominant paradigm for LLMs, ARMs remain relatively poorly understood. 
 
-  * On first sight, they appear myopic (incapable of planning)
+  * On first sight, they appear myopic: they just predict one token at a time. Yet, their empirical success is astonishing!
 
-  * During pretraining, we train to predict the next token conditioned on ground-truth context. This is known as **teacher forcing**
-    and has been criticized for introducing exposure bias.
+  * During pretraining, we train to predict the next token conditioned on the ground-truth context. This is known as teacher forcing
+    and has been criticized for introducing "exposure bias".
 
-* Energy-based models (EBMs)
+--
 
-  * Another class of models, much less used in practice.
+* **Energy-based models (EBMs)**
 
-  * They pose many computational challenges.
+  * Another class of models, much less used in practice, since they pose significant computational challenges (difficult to train and to sample from).
 
-* This paper
+--
 
-  * EBMs provide a useful framework to better understand ARMs
+* **This paper**
 
-  * ARMs inherently have the ability to lookahead, despite being based on next-token
+  * We use EBMs to help us better understand ARMs.
+
+  * ARMs can perfectly fit EBMs. To do so, they need to learn the ability to lookahead!
 
   * Teacher forcing is optimal in function space.
 
@@ -101,9 +103,11 @@ $R(\x, \y) \coloneqq \log p(\y|\x)$.
 
   * Can score the entire response given the prompt.
 
-  * Can use bidirectional (non-causal) Transformer.
+  * Can use bidirectional (non-causal) Transformers.
 
   * Have the ability to plan ahead the response.
+
+--
 
 * **Cons**
 
@@ -131,6 +135,10 @@ A\_R^\ebm(\x) \coloneqq \log \sum_{\y \in \cY} \exp(R(\x, \y))
 $$
 
 <br/>
+
+--
+
+The gradient of the log-partition is a mapping from $R(\x, \cdot)$ to $p(\cdot|\x)$!
 
 .center.width-50[![](./figures/ebm_arm/diagram_ebm.png)]
 
@@ -165,7 +173,7 @@ ARMs are directed graphical models (Bayesian networks).
 
   * Easy to sample from (by ancestral sampling).
 
-  * Easy to train from input-output pairs (log-probabilities are intractable).
+  * Easy to train from examples (log-probabilities are intractable).
 
 * **Cons**
 
@@ -188,6 +196,10 @@ $$
 
 <br/>
 
+--
+
+The gradient of the log-partition is a mapping from $q(\s\_t, \cdot)$ to $\pi(\cdot|\s\_t)$!
+
 .center.width-50[![](./figures/ebm_arm/diagram_arm.png)]
 
 ---
@@ -198,19 +210,27 @@ $$
 
 ## Learning from prompt-response pairs (SFT)
 
-Expected risk of EBM
+**Expected risk of EBM**
 $$
 \cL^\ebm(R) \coloneqq \EE\_{(X,Y) \sim \rho} \left[-\log p^\ebm\_R(\y|\x)\right]
 $$
+We train the model to predict the entire $\y$ given $\x$.
 
-Expected risk of ARM
+--
+
+**Expected risk of ARM**
 $$
 \begin{aligned}
 \cL^\arm(q) &\coloneqq \EE\_{(X,Y) \sim \rho} \left[-\log p^\arm\_q(\y|\x)\right] \\\\
 &= \EE\_{(X,Y) \sim \rho} \left[-\sum\_{t=1}^{|\y|}\log \pi\_q(y\_t|\x \oplus \y\_{< t}) \right]
 \end{aligned}
 $$
-The negative log-likelihood of ARMs naturally leads to **teacher forcing**.
+We train the model to predict the next token $y\_t$ based on the ground-truth
+context $\s\_t = \x \oplus \y\_{< t}$ (not the context sampled so far by the
+model).
+
+This is known as **teacher forcing** (or **behavior cloning** in RL). 
+However, this is a natural consequence of using the negative log-likelihood!
 
 ---
 
@@ -221,7 +241,9 @@ p^\star \coloneqq \argmax\_{p \in \cP(\cY|\cX)}
 \EE\_X \EE\_{Y \sim p} \left[R(X, Y) - \mathrm{KL}(p(\cdot|X), p\_{\mathrm{ref}}(\cdot|X))\right]
 $$
 
-**Optimal solution of maxent RL is an EBM**
+--
+
+**Optimal solution of maxent RL is an EBM!**
 
 $$
 R\_{\mathrm{ref}}(\x, \y) \coloneqq \log p\_{\mathrm{ref}}(\y|\x)
@@ -232,7 +254,9 @@ $$
 p^\star = p^\ebm\_{R + R\_{\mathrm{ref}}}
 $$
 
-**Maxent RL as distilling an EBM into an ARM**
+--
+
+**Maxent RL as distilling an EBM into an ARM...**
 
 $$
 \argmin\_{q \in \cF(\cS \times \cA)} \EE\_X \mathrm{KL}(p^\ebm\_R(\cdot|X), p^\arm\_q(\cdot|X))
@@ -257,6 +281,8 @@ $$
 p(\y|\x) \coloneqq \prod\_{t=1}^{|\y|} \pi(y\_t | \x \oplus \y_{< t})
 $$
 
+--
+
 * From $p \in \cP(\cY|\cX)$ to $\pi \in \cP(\cA|\cS)$ (difficult direction)
 $$
 \begin{aligned}
@@ -276,13 +302,13 @@ R\_r(\x, \y) \coloneqq \sum\_{t=1}^{|\y|} r(\underbrace{\x \oplus \y\_{< t}}\_{\
 $$
 where $r \colon \cS \times \cA \to \RR$
 
-Therefore, any $p^\ebm\_R$ can be rewritten as $p^\ebm\_{R\_r}$
+Therefore, any $p^\ebm\_R$ can be rewritten as $p^\ebm\_{R\_r}$.
 
 ---
 
 ## Bijective mapping between ARM and EBM logits
 
-.pull-right.width-40[![](./figures/ebm_arm/diagram_logits.png)]
+.pull-right.width-35[![](./figures/ebm_arm/diagram_logits.png)]
 
 We define the mapping $q = \cM(r)$ as
 $$
@@ -293,8 +319,8 @@ r(\s\_t, y\_t) + V\_q(\s\_t \oplus y\_t) &\text{if} ~ y\_t \neq \eos
 \end{cases}
 $$
 $\cM$ is bijective (i.e., $\cM^{-1}$ exists and is unique). <br/>
-Computational cost of explicit conversion is $O(V^T)$.
 
+--
 
 <div style="border: 2px solid #444; padding: 15px; border-radius: 8px; background-color: #f9f9f9;">
 If $q = \cM(r)$, then for all $\x \in \cX$ and $\y \in \cY$,
@@ -308,18 +334,40 @@ $$
 
 </div>
 
+Computational cost of explicit conversion is $O(V^T)$.
+
+--
+
 Another way to put this is, if $q = \cM(r)$, then for all $\x \in \cX$,
 $$
-\mathrm{KL}(p^\ebm\_{R\_r}(\cdot|\x), p^\arm\_q(\cdot|\x)) = 0.
+\mathrm{KL}(p^\ebm\_{R\_r}(\cdot|\x), p^\arm\_q(\cdot|\x)) = 0
 $$
+
+---
+
+## Lookahead capability of ARMs
+
+* In an LLM setting, the selected next token $y\_t$ deterministically determine the next state $\s_{t+1} = \s\_t \oplus y\_t$.
+This is the **deterministic tree MDP** setting in RL.
+
+--
+
+* $q(\s\_t, y\_t) = r(\s\_t, y\_t) + V\_q(\s\_t \oplus y\_t)$ is a special case of **soft Bellman equation** and
+$V\_q(\s\_t) \coloneqq \log \sum_{j \in \cA} \exp(q(\s\_t, j))$ is the **soft value function**.
+
+--
+
+* $q$ must model the immediate local score $r$, and it must learn
+to implicitly compute the future-looking soft value function $V\_q$.
+
+
+.center.width-50[![](./figures/ebm_arm/soft_bellman_eq.png)]
 
 ---
 
 class: middle
 
 .center.width-75[![](./figures/ebm_arm/diagram_full.png)]
-
-.center[**Summary**]
 
 ---
 
@@ -341,16 +389,20 @@ $$
 
 </div>
 
-Suppose we obtained $q^\star$ through teacher forcing. Then,
+--
+
+Suppose we obtained $q^\star$ and $R^\star$ using the above minimizations. Then,
 $$
 p^\arm\_{q^\star}(\y|\x) = p^\ebm\_{R^\star}(\y|\x)
 $$
 
 But we haven't done any explicit conversion to obtain $q^\star$!
 
+The mapping $\cM$ is completely implicit.
+
 ---
 
-## KL bound for the function approximation setting
+## KL bound in the function approximation setting
 
 <div style="border: 2px solid #444; padding: 15px; border-radius: 8px; background-color: #f9f9f9;">
 
@@ -364,10 +416,14 @@ $$
 where $q^\star = \cM(r)$
 </div>
 
+--
+
 From Furuya et al. (2025, Theorem 2), there exists a causal Transformer such that
 $$
 \max_{\substack{\s \in \cS(\x), y \in \cA}}|q^\star(\s,y)- \cT(\s)[y]|\leq \varepsilon.
 $$
+
+--
 
 Therefore
 $$
@@ -385,12 +441,19 @@ $$
 
 ## Recap
 
-* Autoregressive models inherently have the ability to plan ahead.
+* Autoregressive models inherently have the ability to plan ahead, through the (implicitly learned) soft value function!
 
-* Teacher is structurally optimal. Failures must come model approximation or 
+* Teacher forcing is optimal in the space of functions. 
+If learning failures occur, they  must necessarily come from model approximation or optimization error!
+
+--
 
 ## Future work
 
-* Better under the effect of model approximation and optimization error
+* Better understand the effect of model approximation and optimization error.
 
-* How much do chain-of-thoughts help with estimating $V\_q$?
+* Can we design architectures, objective functions, inductive biases
+to help learn $q(\s\_t, y\_t) = r(\s\_t, y\_t) + V\_q(\s\_t \oplus y\_t)$?
+
+* Reasoning traces (chain-of-thoughts) allow the model to perform inference-time scaling. 
+How much do they help with approximating $V\_q$?
