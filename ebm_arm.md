@@ -259,7 +259,12 @@ $$
 **Maxent RL as distilling an EBM into an ARM...**
 
 $$
-\argmin\_{q \in \cF(\cS \times \cA)} \EE\_X \mathrm{KL}(p^\ebm\_R(\cdot|X), p^\arm\_q(\cdot|X))
+q^\star \coloneqq \argmin\_{q \in \cF(\cS \times \cA)} \EE\_X \mathrm{KL}(p^\arm\_q(\cdot|X), p^\ebm\_{R + R\_{\mathrm{ref}}}(\cdot|X))
+$$
+
+$$
+\implies
+p^\star = p^\arm\_{q^\star}
 $$
 
 This is the idea of **amortized sampling**. We spend some effort at train time to make sampling easier at inference time.
@@ -338,7 +343,7 @@ Computational cost of explicit conversion is $O(V^T)$.
 
 Another way to put this is, if $q = \cM(r)$, then for all $\x \in \cX$,
 $$
-\mathrm{KL}(p^\ebm\_{R\_r}(\cdot|\x), p^\arm\_q(\cdot|\x)) = 0
+\mathrm{KL}(p^\arm\_q(\cdot|\x), p^\ebm\_{R\_r}(\cdot|\x)) = 0
 $$
 
 ---
@@ -407,12 +412,14 @@ The mapping $\cM$ is completely implicit.
 For any $r \in \cF(\cS \times \cA)$ and $q \in \cF(\cS \times \cA)$
 
 $$
-\mathrm{KL}(p^\ebm_{R_r}(\cdot|\x), p^\arm_q(\cdot|\x))
+\mathrm{KL}(p^\arm_q(\cdot|\x), p^\ebm_{R_r}(\cdot|\x))
 \le 2T \max_{\substack{\s \in \cS(\x)\\ y \in \cA}} |q^\star(\s, y) - q(\s, y)|
 $$
 
 where $q^\star = \cM(r)$
 </div>
+
+The same bound applies for the KL in the opposite order.
 
 --
 
@@ -425,7 +432,7 @@ $$
 
 Therefore
 $$
-\mathrm{KL}(p^\ebm\_{R\_r}(\cdot|\x), p^\arm\_{\cT(\cdot)[\cdot]}(\cdot|\x))
+\mathrm{KL}(p^\arm\_{\cT(\cdot)[\cdot]}(\cdot|\x), p^\ebm\_{R\_r}(\cdot|\x))
 \le 2T \varepsilon.
 $$
 
